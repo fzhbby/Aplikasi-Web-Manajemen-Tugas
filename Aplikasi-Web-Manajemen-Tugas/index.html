@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To-Do List App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background-color: #e6f0fa;
+      color: #000000;
+      transition: background-color 0.5s ease;
+    }
+    h1, h2, h3, p {
+      color: #000000;
+    }
+    .box {
+      background-color: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .box:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+    .completed {
+      text-decoration: line-through;
+      color: #9999a1;
+    }
+    textarea {
+      resize: none;
+    }
+    .is-softblue {
+      background-color: #cce0f5;
+      color: #000000;
+      border: none;
+      transition: background-color 0.3s ease;
+    }
+    .is-softblue:hover {
+      background-color: #b3d1f2;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+      transition: background-color 0.3s ease;
+    }
+    th {
+      background-color: #ddeeff;
+    }
+    tr:hover td {
+      background-color: #f0f8ff;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <section class="section">
+    <div class="container">
+      <div class="box has-text-centered">
+        <h1 class="title">Manajemen Tugas</h1>
+      </div>
+
+      <div class="box">
+        <h2 class="subtitle">Buat Tugas Baru</h2>
+        <div class="field">
+          <div class="control">
+            <input class="input" type="text" id="title" placeholder="Judul Tugas">
+          </div>
+        </div>
+        <div class="field">
+          <div class="control">
+            <textarea class="textarea" id="description" placeholder="Deskripsi Tugas"></textarea>
+          </div>
+        </div>
+        <div class="field">
+          <div class="control">
+            <input class="input" type="date" id="deadline" placeholder="Deadline">
+          </div>
+        </div>
+        <div class="field is-grouped is-justify-content-flex-end">
+          <div class="control">
+            <button class="button is-softblue" onclick="addTask()">Tambah Tugas</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2 class="subtitle">Daftar Tugas</h2>
+        <div id="tasks"></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    let tasks = [];
+
+    function saveTasksToLocalStorage() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function loadTasksFromLocalStorage() {
+      const storedTasks = localStorage.getItem('tasks');
+      if (storedTasks) {
+        tasks = JSON.parse(storedTasks);
+      }
+    }
+
+    function renderTasks() {
+      const tasksContainer = document.getElementById('tasks');
+      tasksContainer.innerHTML = '';
+
+      if (tasks.length > 0) {
+        let tableHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Judul</th>
+                <th>Deskripsi</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        tasks.forEach((task, index) => {
+          tableHTML += `
+            <tr style="animation: fadeIn 0.5s ease-in-out;">
+              <td>${index + 1}</td>
+              <td class="${task.completed ? 'completed' : ''}">${task.title}</td>
+              <td class="${task.completed ? 'completed' : ''}">${task.description}</td>
+              <td>${task.deadline || '-'}</td>
+              <td>${task.completed ? 'Selesai' : 'Belum Selesai'}</td>
+              <td>
+                <div class="dropdown is-hoverable">
+                  <div class="dropdown-trigger">
+                    <button class="button is-softblue is-small" aria-haspopup="true" aria-controls="dropdown-menu">
+                      <span>Aksi</span>
+                      <span class="icon is-small">
+                        <i class="fas fa-angle-down" aria-hidden="true"></i>
+                      </span>
+                    </button>
+                  </div>
+                  <div class="dropdown-menu" role="menu">
+                    <div class="dropdown-content">
+                      <a href="#" class="dropdown-item" onclick="toggleComplete(${index})">
+                        ${task.completed ? 'Batalkan' : 'Selesai'}
+                      </a>
+                      <a href="#" class="dropdown-item" onclick="editTask(${index})">
+                        Edit
+                      </a>
+                      <a href="#" class="dropdown-item" onclick="confirmDelete(${index})">
+                        Hapus
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+
+        tableHTML += '</tbody></table>';
+        tasksContainer.innerHTML = tableHTML;
+      }
+    }
+
+    function addTask() {
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const deadline = document.getElementById('deadline').value;
+      if (title && description) {
+        tasks.push({ title, description, deadline, completed: false });
+        saveTasksToLocalStorage();
+        document.getElementById('title').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('deadline').value = '';
+        renderTasks();
+      }
+    }
+
+    function confirmDelete(index) {
+      if (confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+        deleteTask(index);
+      }
+    }
+
+    function deleteTask(index) {
+      tasks.splice(index, 1);
+      saveTasksToLocalStorage();
+      renderTasks();
+    }
+
+    function editTask(index) {
+      const newTitle = prompt("Edit Judul", tasks[index].title);
+      const newDescription = prompt("Edit Deskripsi", tasks[index].description);
+      const newDeadline = prompt("Edit Deadline", tasks[index].deadline);
+      if (newTitle !== null && newDescription !== null && newDeadline !== null) {
+        tasks[index].title = newTitle;
+        tasks[index].description = newDescription;
+        tasks[index].deadline = newDeadline;
+        saveTasksToLocalStorage();
+        renderTasks();
+      }
+    }
+
+    function toggleComplete(index) {
+      tasks[index].completed = !tasks[index].completed;
+      saveTasksToLocalStorage();
+      renderTasks();
+    }
+
+    loadTasksFromLocalStorage();
+    renderTasks();
+  </script>
+</body>
+</html>
